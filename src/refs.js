@@ -62,7 +62,7 @@ module.exports = [
     text: 'G. An et al. Diagnosing JEPA World Models with Action-Conditioned Predictive Consistency (ACPC). arXiv:2608.12939, 2026.',
     url: 'https://arxiv.org/abs/2608.12939' },
   { n: 20, short: 'Hu et al., 2026', type: 'preprint',
-    text: 'J. Hu et al. Representation Geometry Matters for Planning with JEPA World Models. arXiv:2608.16287, 2026 (arXiv title spells "Reperesentation").',
+    text: 'J. Hu et al. Representation Geometry Matters for Planning with JEPA World Models. arXiv:2608.16287, 2026.',
     url: 'https://arxiv.org/abs/2608.16287' },
   { n: 21, short: 'Lee & Zhang, 2026', type: 'preprint',
     text: 'G. Lee, B.-T. Zhang. Beyond Task Success: Stage-Wise Reliability of World Model Planning under Sensing Degradation. arXiv:2609.07126, 2026.',
