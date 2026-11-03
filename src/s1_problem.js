@@ -282,7 +282,7 @@ module.exports = function problem(ctx) {
       takeaway: 'Each hypothesis has a metric and a control, so a negative result is informative rather than a dead end.',
       visual: 'Top: the question. Middle: four hypotheses with metric and control. Bottom: objectives with their phase; green means done, violet means planned.',
       why: 'The random gate at the same rejection rate separates "rejecting the right candidates" from "rejecting anything at all" (fewer candidates can change CEM by itself). The oracle gate, which uses the true error, tells us whether gating can help even with a perfect score.',
-      careful: 'O0 is done for Push-T (3 seeds) and PointMaze (1 seed, 1.00 after replanning); Wall has two seeds or more (0.94 after round 3 on seeds 99 and 100). The benefits line is an expectation, not a finding.',
+      careful: 'O0 is done for Push-T (3 seeds) and PointMaze (1 seed, 1.00 after replanning); Wall has three seeds (0.95 after round 3; one plan 0.52 against the published 0.74). The benefits line is an expectation, not a finding.',
       q: 'What counts as "top-10% error" and why that threshold?',
       a: 'It is a convention to turn a continuous error into a binary "unreliable" label for AUROC/AUPRC; we also report Spearman correlation on the raw error so the result does not hinge on the threshold, and we will show the reliability curve across all deciles.',
     });

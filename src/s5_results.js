@@ -300,9 +300,8 @@ module.exports = function results(ctx) {
   }
 
   // ---------------------------------------------------------------- 28b. H1 pilot (backup detail)
-  const pilotFile = path.join(ASSETS, '..', 'data', 'h1_pilot_summary.json');
-  if (fs.existsSync(pilotFile)) {
-    const PI = JSON.parse(fs.readFileSync(pilotFile, 'utf8')); const A = PI.auroc_stratified; const G = PI.offline_gate;
+  const PI = require('./pilot_data')(ASSETS);
+  if (PI) { const A = PI.auroc_stratified; const G = PI.offline_gate;
     const pct = (v) => `${(v * 100).toFixed(1).replace(/\.0$/, '')}%`;
     const s = add(SEC, OVER, 'H1 pilot: an untrained MC-dropout score flags the worst imagined steps');
     L.chips(s, ['MEASURED']);
@@ -316,7 +315,7 @@ module.exports = function results(ctx) {
       { x: MX, y: 5.0, w: 6.6, h: 0.6, fontSize: 10.5, italic: true, color: K.muted });
     const gx = 7.45; const gw = 12.733 - gx;
     L.text(s, 'SETUP', { x: gx, y: 1.68, w: gw, h: 0.26, fontSize: 11, bold: true, color: K.muted, charSpacing: 1.5 });
-    L.text(s, `Push-T, seed 1, ${PI.setup.episodes} start/goal pairs, released checkpoint, nothing trained. ${PI.setup.recorded_per_episode} candidates per pair from CEM iterations 1, 5 and 10, each executed open-loop in the simulator: ${PI.setup.pairs.toLocaleString('en-US')} imagined steps with a real latent next to them.`,
+    L.text(s, `Push-T, ${PI.seeds} seed${PI.seeds > 1 ? "s" : ""}, ${PI.setup.episodes} start/goal pairs, released checkpoint, nothing trained. ${PI.setup.recorded_per_episode} candidates per pair from CEM iterations 1, 5 and 10, each executed open-loop in the simulator: ${PI.setup.pairs.toLocaleString('en-US')} imagined steps with a real latent next to them.`,
       { x: gx, y: 1.96, w: gw, h: 1.0, fontSize: 11.5, color: K.body });
     L.text(s, 'OFFLINE GATE REPLAY (REJECT 30%, PICK LOWEST IMAGINED COST)', { x: gx, y: 3.08, w: gw, h: 0.26, fontSize: 11, bold: true, color: K.muted, charSpacing: 1.2 });
     const gRows = [[head('Selection'), head('Chosen plan succeeds')],
@@ -325,7 +324,7 @@ module.exports = function results(ctx) {
     s.addTable(gRows, { x: gx, y: 3.38, w: gw, colW: [3.083, 2.2], fontFace: 'Calibri', fontSize: 11.5, rowH: 0.34, margin: [0.03, 0.08, 0.03, 0.08], valign: 'middle' });
     L.rect(s, { x: MX, y: 5.7, w: CW, h: 1.1, radius: 0.06, fill: K.amberTint, line: null });
     L.text(s, [{ text: 'Reading: ', options: { bold: true, color: '8A5A00' } },
-      { text: `MC-dropout is the only score whose interval clears both controls, so it passes the go / no-go bar on this one seed. The gate replay is flat even for the oracle (one pair = 2.5 points), so error prediction alone does not yet show a gain: that is H4, in the closed loop.` }],
+      { text: `MC-dropout is the only score whose interval clears both controls, so it passes the go / no-go bar (${PI.seeds} seed${PI.seeds > 1 ? 's' : ''}). The gate replay is flat even for the oracle (one pair = 2.5 points), so error prediction alone does not yet show a gain: that is H4, in the closed loop.` }],
     { x: MX + 0.2, y: 5.78, w: CW - 0.4, h: 0.95, fontSize: 12, color: K.body, valign: 'middle' });
     L.notes(s, {
       time: 'backup',

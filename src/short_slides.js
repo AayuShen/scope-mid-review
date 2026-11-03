@@ -25,8 +25,7 @@ module.exports = function shortDeck(ctx) {
   const ms = (i) => mean(seeds.map((k) => P[k].round1_cem[i].success_rate));
 
   // H1 pilot summary (copied from outputs/runs/h1_pilot/<tag>/summary.json); slide 6 falls back without it
-  const pilotFile = path.join(ASSETS, '..', 'data', 'h1_pilot_summary.json');
-  const PILOT = fs.existsSync(pilotFile) ? JSON.parse(fs.readFileSync(pilotFile, 'utf8')) : null;
+  const PILOT = require('./pilot_data')(ASSETS); // pooled over seeds when available
   const pct = (v) => `${Math.round(v * 100)}%`;
   const bestScore = () => {
     const cands = ['mc_dropout', 'act_perturb', 'obs_perturb', 'knn'];
@@ -39,7 +38,7 @@ module.exports = function shortDeck(ctx) {
     const triv = A.dist_start.auroc; const rnd = A.random.auroc;
     const beatsRandom = r.auroc_ci[0] > 0.5; const beatsTrivial = r.auroc_ci[0] > triv;
     const verdict = beatsTrivial ? 'beats chance and the trivial baseline' : beatsRandom ? 'beats chance but not yet the trivial "distance moved" baseline (' + triv.toFixed(2) + ')' : 'does not yet beat chance';
-    return `Best untrained score: ${SCORE_NAME[b]}, AUROC ${r.auroc.toFixed(2)} [${r.auroc_ci[0].toFixed(2)}–${r.auroc_ci[1].toFixed(2)}] vs random ${rnd.toFixed(2)}: it ${verdict} (1 seed, 40 episodes). Next: 3 seeds, more sampling contexts, then H4 in the closed loop.`;
+    return `Best untrained score: ${SCORE_NAME[b]}, AUROC ${r.auroc.toFixed(2)} [${r.auroc_ci[0].toFixed(2)}–${r.auroc_ci[1].toFixed(2)}] vs random ${rnd.toFixed(2)}: it ${verdict} (${PILOT.seeds} seed${PILOT.seeds > 1 ? 's' : ''}, ${PILOT.setup.episodes} episodes). Next: more sampling contexts and calibration, then H4 in the closed loop.`;
   }
   function evalStatus() {
     const W = M.envs.wall; const nW = Object.keys(W).length; const pm = Object.keys(M.envs.point_maze || {}).length ? 'PointMaze 1' : 'PointMaze smoke';
@@ -271,7 +270,7 @@ module.exports = function shortDeck(ctx) {
       const ax0 = 9.05; const ax1 = 12.45; const a0 = 0.3; const a1 = 1.0;
       const AX = (v) => ax0 + (Math.min(Math.max(v, a0), a1) - a0) / (a1 - a0) * (ax1 - ax0);
       L.text(s, 'H1 pilot: does a trust score flag the imagined steps with the largest real error?', { x: 6.8, y: 1.6, w: 5.93, h: 0.28, fontSize: 12, bold: true, color: K.ink });
-      L.text(s, `AUROC with 95% interval · ${PILOT.setup.episodes} Push-T decision points · ${PILOT.setup.pairs.toLocaleString('en-US')} imagined steps checked against the simulator`,
+      L.text(s, `AUROC with 95% interval · ${PILOT.setup.episodes} Push-T decision points, ${PILOT.seeds} seed${PILOT.seeds > 1 ? 's' : ''} · ${PILOT.setup.pairs.toLocaleString('en-US')} imagined steps checked against the simulator`,
         { x: 6.8, y: 1.88, w: 5.93, h: 0.42, fontSize: 10.5, color: K.sub });
       const order = [['mc_dropout', 'MC-dropout'], ['act_perturb', 'Action perturbation'], ['obs_perturb', 'Image perturbation'], ['knn', 'Distance to training data'],
         ['cost', 'Imagined cost'], ['dist_start', 'Distance moved (trivial)'], ['random', 'Random (control)']];
@@ -324,7 +323,7 @@ module.exports = function shortDeck(ctx) {
       takeaway: 'The baseline behaves as published on our hardware, and in a first pilot an untrained MC-dropout score ranks the worst imagined steps clearly above chance and above the trivial baseline.',
       visual: 'Left: Push-T dot plot, success 0.7–1.0, grey seeds, blue mean ± SD, orange published. Right: AUROC per trust score with 95% bootstrap interval over episodes; dashed line 0.5 = chance; grey rows are the controls. Tiles: speed-up, offline gate replay, Wall and PointMaze.',
       why: 'H1 is the go / no-go question: without a score that tracks real error, a gate is just a random filter.',
-      careful: `Pilot = 1 seed, ${PILOT.setup.episodes} episodes, ${PILOT.setup.recorded_per_episode} candidates per episode taken from CEM iterations 1, 5 and 10 (48 / 48 / 96) of a ${PILOT.setup.cem_iters}-iteration first plan, each executed open-loop in the simulator. Label: real latent error in the top 10% for its step; AUROC is computed within each step and averaged, so horizon length cannot explain it. Scores are untrained. The offline gate replay picks the best-imagined candidate after rejecting the 30% least trusted; plain ${pct(PILOT.offline_gate['plain (no gate)'].success)}, oracle ${pct(PILOT.offline_gate['oracle (true error)'].success)}: at 40 episodes one episode is 2.5 points, so differences of 5–7 points are noise. Wall round 3 for seed 99 was lost when WSL shut down, so Wall is compared at the same round for every seed.`,
+      careful: `Pilot = ${PILOT.seeds} seed${PILOT.seeds > 1 ? 's' : ''}, ${PILOT.setup.episodes} episodes in total${PILOT.byRun ? ' (MC-dropout AUROC per seed: ' + Object.values(PILOT.byRun).map((v) => v.mc_dropout.toFixed(2)).join(', ') + ')' : ''}, ${PILOT.setup.recorded_per_episode} candidates per episode taken from CEM iterations 1, 5 and 10 (48 / 48 / 96) of a ${PILOT.setup.cem_iters}-iteration first plan, each executed open-loop in the simulator. Label: real latent error in the top 10% for its step; AUROC is computed within each step and averaged, so horizon length cannot explain it. Scores are untrained. The offline gate replay picks the best-imagined candidate after rejecting the 30% least trusted; plain ${pct(PILOT.offline_gate['plain (no gate)'].success)}, oracle ${pct(PILOT.offline_gate['oracle (true error)'].success)}: at 40 episodes one episode is 2.5 points, so differences of 5–7 points are noise. Wall is compared at the same round for every seed (3 seeds).`,
       q: 'If MC-dropout predicts error so well, why does the offline gate not help?',
       a: 'Because among CEM\'s final candidates the one it picks is rarely a high-error one: even the oracle gate, which knows the true error, does not change success offline. Error prediction (H1) is necessary but not sufficient; whether rejecting changes what the robot does over several replanning rounds is H4, which needs the closed loop.',
       sources: 'data/h1_pilot_summary.json (scripts/h1_pilot.py, outputs/runs/h1_pilot/pilot40); data/phase0_metrics.json; docs/experiments/h1_pilot_trust_scores.md.',
